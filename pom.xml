@@ -4,6 +4,7 @@
 	<groupId>com.kixeye.relax</groupId>
 	<artifactId>relax</artifactId>
 	<name>Relax</name>
+	<version>1.0.0-SNAPSHOT</version>
 	<description>
         An async REST client.
     </description>
