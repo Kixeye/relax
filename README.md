@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Kixeye/kixmpp.svg?branch=master)](https://travis-ci.org/Kixeye/kixmpp)
+[![Build Status](https://travis-ci.org/Kixeye/relax.svg?branch=master)](https://travis-ci.org/Kixeye/relax)
 
 relax
 =====
