@@ -116,7 +116,7 @@ public class AsyncRestClientTest {
 			}
 		};
 		
-		try (AsyncRestClient client = new AsyncRestClient(5000, 5000, serDe)) {
+		try (RestClient client = RestClients.create(serDe).build()) {
 			TestObject testObject = client.get("http://localhost:" + port + "/test", TestObject.class).waitForComplete(8, TimeUnit.SECONDS).get().deserialize();
 			
 			Assert.assertEquals("testString", testObject.getTestString());
@@ -138,8 +138,8 @@ public class AsyncRestClientTest {
 				return new ObjectMapper().readValue(data, offset, length, clazz);
 			}
 		};
-		
-		try (AsyncRestClient client = new AsyncRestClient(5000, 5000, serDe)) {
+
+		try (RestClient client = RestClients.create(serDe).build()) {
 			TestObject testObject = client
 					.post("http://localhost:" + port + "/test", null, null, new TestObject("testString", port), TestObject.class)
 					.waitForComplete(8, TimeUnit.SECONDS).get().deserialize();
@@ -163,8 +163,8 @@ public class AsyncRestClientTest {
 				return new ObjectMapper().readValue(data, offset, length, clazz);
 			}
 		};
-		
-		try (AsyncRestClient client = new AsyncRestClient(5000, 5000, serDe)) {
+
+		try (RestClient client = RestClients.create(serDe).build()) {
 			boolean isComplete = client.put("http://localhost:" + port + "/test", null, null, new TestObject("testString", port))
 					.waitForComplete(8, TimeUnit.SECONDS).isComplete();
 			

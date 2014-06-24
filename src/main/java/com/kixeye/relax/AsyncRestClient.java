@@ -20,14 +20,12 @@ package com.kixeye.relax;
  * #L%
  */
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.CancellationException;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
@@ -35,7 +33,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.util.EntityUtils;
 
 import com.kixeye.relax.util.UrlUtils;
@@ -45,24 +42,53 @@ import com.kixeye.relax.util.UrlUtils;
  * 
  * @author ebahtijaragic
  */
-public class AsyncRestClient implements Closeable {
-	private final CloseableHttpAsyncClient httpClient;
+public class AsyncRestClient implements RestClient {
+	private boolean isHttpClientReused = false;
+	
+	private CloseableHttpAsyncClient httpClient;
 
-	private final RestClientSerDe serDe;
+	private RestClientSerDe serDe;
+	
+	private String uriPrefix = "";
 	
 	/**
-	 * Creates a REST Async HTTP client.
+	 * Creates an {@link AsyncRestClient}
 	 */
-	public AsyncRestClient(int socketTimout, int connectionTimeout, RestClientSerDe serDe) {
-		this.httpClient = HttpAsyncClients.custom().setDefaultRequestConfig(
-					RequestConfig.custom()
-						.setConnectTimeout(connectionTimeout)
-						.setSocketTimeout(socketTimout)
-					.build())
-				.build();
-		this.httpClient.start();
+	protected AsyncRestClient() {
 		
+	}
+	
+	/**
+	 * Sets the uri prefix.
+	 * 
+	 * @param uriPrefix
+	 */
+	protected void setUriPrefix(String uriPrefix) {
+		if (uriPrefix == null) {
+			uriPrefix = "";
+		}
+		
+		this.uriPrefix = uriPrefix;
+	}
+	
+	/**
+	 * Sets the serDe.
+	 * 
+	 * @param serDe
+	 */
+	protected void setSerDe(RestClientSerDe serDe) {
 		this.serDe = serDe;
+	}
+	
+	/**
+	 * Sets the http client.
+	 * 
+	 * @param httpClient
+	 * @param isHttpClientReused
+	 */
+	protected void setHttpClient(CloseableHttpAsyncClient httpClient, boolean isHttpClientReused) {
+		this.httpClient = httpClient;
+		this.isHttpClientReused = isHttpClientReused;
 	}
 	
 	/**
@@ -72,23 +98,20 @@ public class AsyncRestClient implements Closeable {
 	 * @throws IOException 
 	 */
 	public void close() throws IOException {
-		httpClient.close();
+		if (!isHttpClientReused) {
+			httpClient.close();
+		}
 	}
 	
 	/**
-	 * Performs an HTTP get.
-	 * 
-	 * @param path
-	 * @param responseType
-	 * @param pathVariables
-	 * @return
-	 * @throws IOException
+	 * @see com.kixeye.relax.RestClient#get(java.lang.String, java.lang.Class, java.lang.Object)
 	 */
+	@Override
 	public <O> HttpPromise<SerializedObject<O>> get(final String path, final Class<O> responseType, Object... pathVariables) throws IOException {
 		HttpPromise<SerializedObject<O>> promise = new HttpPromise<>();
 		SerializedObjectHttpPromiseDataSetter<O> dataSetter = new SerializedObjectHttpPromiseDataSetter<>();
 
-		HttpGet request = new HttpGet(UrlUtils.expand(path, pathVariables));
+		HttpGet request = new HttpGet(UrlUtils.expand(uriPrefix + path, pathVariables));
 
 		httpClient.execute(request, new AsyncRestClientResponseCallback<>(promise, responseType, dataSetter));
 		
@@ -96,22 +119,14 @@ public class AsyncRestClient implements Closeable {
 	}
 	
 	/**
-	 * Performs a HTTP post.
-	 * 
-	 * @param path
-	 * @param contentTypeHeader
-	 * @param acceptHeader
-	 * @param requestObject
-	 * @param responseType
-	 * @param pathVariables
-	 * @return
-	 * @throws IOException
+	 * @see com.kixeye.relax.RestClient#post(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Class, java.lang.Object)
 	 */
+	@Override
 	public <I, O> HttpPromise<SerializedObject<O>> post(String path, String contentTypeHeader, String acceptHeader, I requestObject, final Class<O> responseType, Object... pathVariables) throws IOException {
 		HttpPromise<SerializedObject<O>> promise = new HttpPromise<>();
 		SerializedObjectHttpPromiseDataSetter<O> dataSetter = new SerializedObjectHttpPromiseDataSetter<>();
 		
-		HttpPost request = new HttpPost(UrlUtils.expand(path, pathVariables));
+		HttpPost request = new HttpPost(UrlUtils.expand(uriPrefix + path, pathVariables));
 		if (requestObject != null) {
 			request.setEntity(new ByteArrayEntity(serDe.serialize(contentTypeHeader, requestObject)));
 		}
@@ -130,21 +145,14 @@ public class AsyncRestClient implements Closeable {
 	}
 	
 	/**
-	 * Performs a HTTP put.
-	 * 
-	 * @param path
-	 * @param contentTypeHeader
-	 * @param acceptHeader
-	 * @param requestObject
-	 * @param pathVariables
-	 * @return
-	 * @throws IOException
+	 * @see com.kixeye.relax.RestClient#put(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Object)
 	 */
+	@Override
 	public <I> HttpPromise<Void> put(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
 		HttpPromise<Void> promise = new HttpPromise<>();
 		VoidHttpPromiseDataSetter dataSetter = new VoidHttpPromiseDataSetter();
 		
-		HttpPost request = new HttpPost(UrlUtils.expand(path, pathVariables));
+		HttpPost request = new HttpPost(UrlUtils.expand(uriPrefix + path, pathVariables));
 		if (requestObject != null) {
 			request.setEntity(new ByteArrayEntity(serDe.serialize(contentTypeHeader, requestObject)));
 		}
@@ -163,21 +171,14 @@ public class AsyncRestClient implements Closeable {
 	}
 
 	/**
-	 * Performs a HTTP patch.
-	 * 
-	 * @param path
-	 * @param contentTypeHeader
-	 * @param acceptHeader
-	 * @param requestObject
-	 * @param pathVariables
-	 * @return
-	 * @throws IOException
+	 * @see com.kixeye.relax.RestClient#patch(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Object)
 	 */
+	@Override
 	public <I> HttpPromise<Void> patch(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
 		HttpPromise<Void> promise = new HttpPromise<>();
 		VoidHttpPromiseDataSetter dataSetter = new VoidHttpPromiseDataSetter();
 		
-		HttpPatch request = new HttpPatch(UrlUtils.expand(path, pathVariables));
+		HttpPatch request = new HttpPatch(UrlUtils.expand(uriPrefix + path, pathVariables));
 		if (requestObject != null) {
 			request.setEntity(new ByteArrayEntity(serDe.serialize(contentTypeHeader, requestObject)));
 		}
@@ -196,18 +197,14 @@ public class AsyncRestClient implements Closeable {
 	}
 
 	/**
-	 * Performs a HTTP delete.
-	 * 
-	 * @param path
-	 * @param pathVariables
-	 * @return
-	 * @throws IOException
+	 * @see com.kixeye.relax.RestClient#delete(java.lang.String, java.lang.Object)
 	 */
+	@Override
 	public <I> HttpPromise<Void> delete(String path, Object... pathVariables) throws IOException {
 		HttpPromise<Void> promise = new HttpPromise<>();
 		VoidHttpPromiseDataSetter dataSetter = new VoidHttpPromiseDataSetter();
 		
-		HttpDelete request = new HttpDelete(UrlUtils.expand(path, pathVariables));
+		HttpDelete request = new HttpDelete(UrlUtils.expand(uriPrefix + path, pathVariables));
 		
 		httpClient.execute(request, new AsyncRestClientResponseCallback<>(promise, null, dataSetter));
 		
