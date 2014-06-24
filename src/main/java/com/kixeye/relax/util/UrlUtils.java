@@ -2,7 +2,7 @@ package com.kixeye.relax.util;
 
 /*
  * #%L
- * KIXMPP Parent
+ * Relax
  * %%
  * Copyright (C) 2014 KIXEYE, Inc
  * %%
