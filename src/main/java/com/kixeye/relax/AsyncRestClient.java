@@ -109,11 +109,10 @@ public class AsyncRestClient implements RestClient {
 	@Override
 	public <O> HttpPromise<SerializedObject<O>> get(final String path, final Class<O> responseType, Object... pathVariables) throws IOException {
 		HttpPromise<SerializedObject<O>> promise = new HttpPromise<>();
-		SerializedObjectHttpPromiseDataSetter<O> dataSetter = new SerializedObjectHttpPromiseDataSetter<>();
-
+		
 		HttpGet request = new HttpGet(UrlUtils.expand(uriPrefix + path, pathVariables));
 
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(promise, responseType, dataSetter));
+		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, new SerializedObjectHttpPromiseDataSetter<>(promise)));
 		
 		return promise;
 	}
@@ -124,7 +123,6 @@ public class AsyncRestClient implements RestClient {
 	@Override
 	public <I, O> HttpPromise<SerializedObject<O>> post(String path, String contentTypeHeader, String acceptHeader, I requestObject, final Class<O> responseType, Object... pathVariables) throws IOException {
 		HttpPromise<SerializedObject<O>> promise = new HttpPromise<>();
-		SerializedObjectHttpPromiseDataSetter<O> dataSetter = new SerializedObjectHttpPromiseDataSetter<>();
 		
 		HttpPost request = new HttpPost(UrlUtils.expand(uriPrefix + path, pathVariables));
 		if (requestObject != null) {
@@ -139,7 +137,7 @@ public class AsyncRestClient implements RestClient {
 			request.setHeader("Accept", acceptHeader);
 		}
 
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(promise, responseType, dataSetter));
+		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, new SerializedObjectHttpPromiseDataSetter<>(promise)));
 		
 		return promise;
 	}
@@ -150,7 +148,6 @@ public class AsyncRestClient implements RestClient {
 	@Override
 	public <I> HttpPromise<Void> put(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
 		HttpPromise<Void> promise = new HttpPromise<>();
-		VoidHttpPromiseDataSetter dataSetter = new VoidHttpPromiseDataSetter();
 		
 		HttpPost request = new HttpPost(UrlUtils.expand(uriPrefix + path, pathVariables));
 		if (requestObject != null) {
@@ -165,7 +162,7 @@ public class AsyncRestClient implements RestClient {
 			request.setHeader("Accept", acceptHeader);
 		}
 
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(promise, null, dataSetter));
+		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, new VoidHttpPromiseDataSetter(promise)));
 		
 		return promise;
 	}
@@ -176,7 +173,6 @@ public class AsyncRestClient implements RestClient {
 	@Override
 	public <I> HttpPromise<Void> patch(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
 		HttpPromise<Void> promise = new HttpPromise<>();
-		VoidHttpPromiseDataSetter dataSetter = new VoidHttpPromiseDataSetter();
 		
 		HttpPatch request = new HttpPatch(UrlUtils.expand(uriPrefix + path, pathVariables));
 		if (requestObject != null) {
@@ -191,7 +187,7 @@ public class AsyncRestClient implements RestClient {
 			request.setHeader("Accept", acceptHeader);
 		}
 
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(promise, null, dataSetter));
+		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, new VoidHttpPromiseDataSetter(promise)));
 		
 		return promise;
 	}
@@ -202,11 +198,10 @@ public class AsyncRestClient implements RestClient {
 	@Override
 	public <I> HttpPromise<Void> delete(String path, Object... pathVariables) throws IOException {
 		HttpPromise<Void> promise = new HttpPromise<>();
-		VoidHttpPromiseDataSetter dataSetter = new VoidHttpPromiseDataSetter();
 		
 		HttpDelete request = new HttpDelete(UrlUtils.expand(uriPrefix + path, pathVariables));
 		
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(promise, null, dataSetter));
+		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, new VoidHttpPromiseDataSetter(promise)));
 		
 		return promise;
 	}
@@ -228,23 +223,21 @@ public class AsyncRestClient implements RestClient {
 	 * @param <T>
 	 */
 	private class AsyncRestClientResponseCallback<T, R> implements FutureCallback<HttpResponse> {
-		private final HttpPromise<T> promise;
 		private final Class<R> responseType;
 		
-		private HttpPromiseDataSetter<T, R> dataSetter;
+		private HttpDataHandler<T, R> dataHandler;
 		
 		/**
-		 * @param promise
 		 * @param responseType
+		 * @param dataHandler
 		 */
-		protected AsyncRestClientResponseCallback(HttpPromise<T> promise, Class<R> responseType, HttpPromiseDataSetter<T, R> dataSetter) {
-			this.promise = promise;
+		protected AsyncRestClientResponseCallback(Class<R> responseType, HttpDataHandler<T, R> dataHandler) {
 			this.responseType = responseType;
-			this.dataSetter = dataSetter;
+			this.dataHandler = dataHandler;
 		}
 
 		public void failed(Exception ex) {
-			promise.setError(ex);
+			dataHandler.setError(ex);
 		}
 		
 		public void completed(HttpResponse result) {
@@ -259,14 +252,14 @@ public class AsyncRestClient implements RestClient {
 				
 				Header contentTypeHeader = result.getFirstHeader("Content-Type");
 				
-				dataSetter.setData(promise, contentTypeHeader != null ? contentTypeHeader.getValue() : null, data, responseType);
+				dataHandler.setData(contentTypeHeader != null ? contentTypeHeader.getValue() : null, data, responseType);
 			} catch (Exception e) {
 				failed(e);
 			}
 		}
 		
 		public void cancelled() {
-			promise.setError(new CancellationException());
+			dataHandler.setError(new CancellationException());
 		}
 	}
 	
@@ -276,9 +269,23 @@ public class AsyncRestClient implements RestClient {
 	 * @author ebahtijaragic
 	 *
 	 */
-	private class VoidHttpPromiseDataSetter implements HttpPromiseDataSetter<Void, Void> {
-		public void setData(HttpPromise<Void> promise, String mimeType, byte[] data, Class<Void> responseType) {
+	private class VoidHttpPromiseDataSetter implements HttpDataHandler<Void, Void> {
+		private final HttpPromise<Void> promise;
+		
+		/**
+		 * @param promise
+		 */
+		protected VoidHttpPromiseDataSetter(HttpPromise<Void> promise) {
+			this.promise = promise;
+		}
+
+		@Override
+		public void setData(String mimeType, byte[] data, Class<Void> responseType) {
 			promise.set(null);
+		}
+
+		public void setError(Exception exception) {
+			promise.setError(exception);
 		}
 	}
 	
@@ -289,9 +296,22 @@ public class AsyncRestClient implements RestClient {
 	 *
 	 * @param <T>
 	 */
-	private class SerializedObjectHttpPromiseDataSetter<T> implements HttpPromiseDataSetter<SerializedObject<T>, T> {
-		public void setData(HttpPromise<SerializedObject<T>> promise, String mimeType, byte[] data, Class<T> responseType) {
+	private class SerializedObjectHttpPromiseDataSetter<T> implements HttpDataHandler<SerializedObject<T>, T> {
+		private final HttpPromise<SerializedObject<T>> promise;
+		
+		/**
+		 * @param promise
+		 */
+		protected SerializedObjectHttpPromiseDataSetter( HttpPromise<SerializedObject<T>> promise) {
+			this.promise = promise;
+		}
+
+		public void setData(String mimeType, byte[] data, Class<T> responseType) {
 			promise.set(new SerializedObject<>(serDe, mimeType, data, responseType));
+		}
+
+		public void setError(Exception exception) {
+			promise.setError(exception);
 		}
 	}
 	
@@ -303,7 +323,9 @@ public class AsyncRestClient implements RestClient {
 	 * @param <T>
 	 * @param <R>
 	 */
-	private interface HttpPromiseDataSetter<T, R> {
-		public void setData(HttpPromise<T> promise, String mimeType, byte[] data, Class<R> responseType);
+	private interface HttpDataHandler<T, R> {
+		public void setData(String mimeType, byte[] data, Class<R> responseType);
+		
+		public void setError(Exception exception);
 	}
 }
