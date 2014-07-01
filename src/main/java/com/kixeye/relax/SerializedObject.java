@@ -31,19 +31,19 @@ public class SerializedObject<O> {
 	private final RestClientSerDe serDe;
 	private final String contentType;
 	private final byte[] data;
-	private final Class<O> objectType;
+	private final Class<O> responseType;
 	
 	/**
 	 * @param serDe
 	 * @param contentType
 	 * @param data
-	 * @param objectType
+	 * @param responseType
 	 */
-	protected SerializedObject(RestClientSerDe serDe, String contentType, byte[] data, Class<O> objectType) {
+	protected SerializedObject(RestClientSerDe serDe, String contentType, byte[] data, Class<O> responseType) {
 		this.serDe = serDe;
 		this.contentType = contentType;
 		this.data = data;
-		this.objectType = objectType;
+		this.responseType = responseType;
 	}
 
 	/**
@@ -53,6 +53,20 @@ public class SerializedObject<O> {
 	 * @throws IOException
 	 */
 	public O deserialize() throws IOException {
-		return serDe.deserialize(contentType, data, 0, data.length, objectType);
+		return serDe.deserialize(contentType, data, 0, data.length, responseType);
+	}
+
+	/**
+	 * @return the data
+	 */
+	public byte[] getData() {
+		return data;
+	}
+
+	/**
+	 * @return the responseType
+	 */
+	public Class<O> getResponseType() {
+		return responseType;
 	}
 }

@@ -38,7 +38,7 @@ public interface RestClient extends Closeable {
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract <O> HttpPromise<SerializedObject<O>> get(String path,
+	public abstract <O> HttpPromise<HttpResponse<O>> get(String path,
 			Class<O> responseType, Object... pathVariables) throws IOException;
 
 	/**
@@ -53,7 +53,7 @@ public interface RestClient extends Closeable {
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract <I, O> HttpPromise<SerializedObject<O>> post(String path,
+	public abstract <I, O> HttpPromise<HttpResponse<O>> post(String path,
 			String contentTypeHeader, String acceptHeader, I requestObject,
 			Class<O> responseType, Object... pathVariables) throws IOException;
 
@@ -68,7 +68,7 @@ public interface RestClient extends Closeable {
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract <I> HttpPromise<Void> put(String path,
+	public abstract <I> HttpPromise<HttpResponse<Void>> put(String path,
 			String contentTypeHeader, String acceptHeader, I requestObject,
 			Object... pathVariables) throws IOException;
 
@@ -83,7 +83,7 @@ public interface RestClient extends Closeable {
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract <I> HttpPromise<Void> patch(String path,
+	public abstract <I> HttpPromise<HttpResponse<Void>> patch(String path,
 			String contentTypeHeader, String acceptHeader, I requestObject,
 			Object... pathVariables) throws IOException;
 
@@ -95,7 +95,7 @@ public interface RestClient extends Closeable {
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract <I> HttpPromise<Void> delete(String path,
+	public abstract <I> HttpPromise<HttpResponse<Void>> delete(String path,
 			Object... pathVariables) throws IOException;
 
 }

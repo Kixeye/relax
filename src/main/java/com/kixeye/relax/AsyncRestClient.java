@@ -23,9 +23,6 @@ package com.kixeye.relax;
 import java.io.IOException;
 import java.util.concurrent.CancellationException;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
@@ -33,7 +30,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.util.EntityUtils;
 
 import com.kixeye.relax.util.UrlUtils;
 
@@ -107,12 +103,12 @@ public class AsyncRestClient implements RestClient {
 	 * @see com.kixeye.relax.RestClient#get(java.lang.String, java.lang.Class, java.lang.Object)
 	 */
 	@Override
-	public <O> HttpPromise<SerializedObject<O>> get(final String path, final Class<O> responseType, Object... pathVariables) throws IOException {
-		HttpPromise<SerializedObject<O>> promise = new HttpPromise<>();
+	public <O> HttpPromise<HttpResponse<O>> get(final String path, final Class<O> responseType, Object... pathVariables) throws IOException {
+		HttpPromise<HttpResponse<O>> promise = new HttpPromise<>();
 		
 		HttpGet request = new HttpGet(UrlUtils.expand(uriPrefix + path, pathVariables));
 
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, new SerializedObjectHttpPromiseDataSetter<>(promise)));
+		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, promise));
 		
 		return promise;
 	}
@@ -121,8 +117,8 @@ public class AsyncRestClient implements RestClient {
 	 * @see com.kixeye.relax.RestClient#post(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Class, java.lang.Object)
 	 */
 	@Override
-	public <I, O> HttpPromise<SerializedObject<O>> post(String path, String contentTypeHeader, String acceptHeader, I requestObject, final Class<O> responseType, Object... pathVariables) throws IOException {
-		HttpPromise<SerializedObject<O>> promise = new HttpPromise<>();
+	public <I, O> HttpPromise<HttpResponse<O>> post(String path, String contentTypeHeader, String acceptHeader, I requestObject, final Class<O> responseType, Object... pathVariables) throws IOException {
+		HttpPromise<HttpResponse<O>> promise = new HttpPromise<>();
 		
 		HttpPost request = new HttpPost(UrlUtils.expand(uriPrefix + path, pathVariables));
 		if (requestObject != null) {
@@ -137,7 +133,7 @@ public class AsyncRestClient implements RestClient {
 			request.setHeader("Accept", acceptHeader);
 		}
 
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, new SerializedObjectHttpPromiseDataSetter<>(promise)));
+		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, promise));
 		
 		return promise;
 	}
@@ -146,8 +142,8 @@ public class AsyncRestClient implements RestClient {
 	 * @see com.kixeye.relax.RestClient#put(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Object)
 	 */
 	@Override
-	public <I> HttpPromise<Void> put(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
-		HttpPromise<Void> promise = new HttpPromise<>();
+	public <I> HttpPromise<HttpResponse<Void>> put(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
+		HttpPromise<HttpResponse<Void>> promise = new HttpPromise<>();
 		
 		HttpPost request = new HttpPost(UrlUtils.expand(uriPrefix + path, pathVariables));
 		if (requestObject != null) {
@@ -162,7 +158,7 @@ public class AsyncRestClient implements RestClient {
 			request.setHeader("Accept", acceptHeader);
 		}
 
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, new VoidHttpPromiseDataSetter(promise)));
+		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, promise));
 		
 		return promise;
 	}
@@ -171,8 +167,8 @@ public class AsyncRestClient implements RestClient {
 	 * @see com.kixeye.relax.RestClient#patch(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Object)
 	 */
 	@Override
-	public <I> HttpPromise<Void> patch(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
-		HttpPromise<Void> promise = new HttpPromise<>();
+	public <I> HttpPromise<HttpResponse<Void>> patch(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
+		HttpPromise<HttpResponse<Void>> promise = new HttpPromise<>();
 		
 		HttpPatch request = new HttpPatch(UrlUtils.expand(uriPrefix + path, pathVariables));
 		if (requestObject != null) {
@@ -187,7 +183,7 @@ public class AsyncRestClient implements RestClient {
 			request.setHeader("Accept", acceptHeader);
 		}
 
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, new VoidHttpPromiseDataSetter(promise)));
+		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, promise));
 		
 		return promise;
 	}
@@ -196,12 +192,12 @@ public class AsyncRestClient implements RestClient {
 	 * @see com.kixeye.relax.RestClient#delete(java.lang.String, java.lang.Object)
 	 */
 	@Override
-	public <I> HttpPromise<Void> delete(String path, Object... pathVariables) throws IOException {
-		HttpPromise<Void> promise = new HttpPromise<>();
+	public <I> HttpPromise<HttpResponse<Void>> delete(String path, Object... pathVariables) throws IOException {
+		HttpPromise<HttpResponse<Void>> promise = new HttpPromise<>();
 		
 		HttpDelete request = new HttpDelete(UrlUtils.expand(uriPrefix + path, pathVariables));
 		
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, new VoidHttpPromiseDataSetter(promise)));
+		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, promise));
 		
 		return promise;
 	}
@@ -219,113 +215,35 @@ public class AsyncRestClient implements RestClient {
 	 * A response callback that forwards the response to the promise.
 	 * 
 	 * @author ebahtijaragic
-	 *
-	 * @param <T>
 	 */
-	private class AsyncRestClientResponseCallback<T, R> implements FutureCallback<HttpResponse> {
+	private class AsyncRestClientResponseCallback<R> implements FutureCallback<org.apache.http.HttpResponse> {
 		private final Class<R> responseType;
 		
-		private HttpDataHandler<T, R> dataHandler;
+		private HttpPromise<HttpResponse<R>> promise;
 		
 		/**
 		 * @param responseType
-		 * @param dataHandler
+		 * @param HttpPromise<HttpResponse<T>> promise
 		 */
-		protected AsyncRestClientResponseCallback(Class<R> responseType, HttpDataHandler<T, R> dataHandler) {
+		protected AsyncRestClientResponseCallback(Class<R> responseType, HttpPromise<HttpResponse<R>> promise) {
 			this.responseType = responseType;
-			this.dataHandler = dataHandler;
+			this.promise = promise;
 		}
 
 		public void failed(Exception ex) {
-			dataHandler.setError(ex);
+			promise.setError(ex);
 		}
 		
-		public void completed(HttpResponse result) {
+		public void completed(org.apache.http.HttpResponse result) {
 			try {
-				HttpEntity entity = result.getEntity();
-				byte[] data = null;
-				
-				if (entity != null) {
-					data = EntityUtils.toByteArray(entity);
-					EntityUtils.consumeQuietly(entity);
-				}
-				
-				Header contentTypeHeader = result.getFirstHeader("Content-Type");
-				
-				dataHandler.setData(contentTypeHeader != null ? contentTypeHeader.getValue() : null, data, responseType);
+				promise.set(new HttpResponse<>(result, serDe, responseType));
 			} catch (Exception e) {
 				failed(e);
 			}
 		}
 		
 		public void cancelled() {
-			dataHandler.setError(new CancellationException());
+			promise.setError(new CancellationException());
 		}
-	}
-	
-	/**
-	 * Sets promise as null.
-	 * 
-	 * @author ebahtijaragic
-	 *
-	 */
-	private class VoidHttpPromiseDataSetter implements HttpDataHandler<Void, Void> {
-		private final HttpPromise<Void> promise;
-		
-		/**
-		 * @param promise
-		 */
-		protected VoidHttpPromiseDataSetter(HttpPromise<Void> promise) {
-			this.promise = promise;
-		}
-
-		@Override
-		public void setData(String mimeType, byte[] data, Class<Void> responseType) {
-			promise.set(null);
-		}
-
-		public void setError(Exception exception) {
-			promise.setError(exception);
-		}
-	}
-	
-	/**
-	 * Sets promise data for a serialized object http promise.
-	 * 
-	 * @author ebahtijaragic
-	 *
-	 * @param <T>
-	 */
-	private class SerializedObjectHttpPromiseDataSetter<T> implements HttpDataHandler<SerializedObject<T>, T> {
-		private final HttpPromise<SerializedObject<T>> promise;
-		
-		/**
-		 * @param promise
-		 */
-		protected SerializedObjectHttpPromiseDataSetter( HttpPromise<SerializedObject<T>> promise) {
-			this.promise = promise;
-		}
-
-		public void setData(String mimeType, byte[] data, Class<T> responseType) {
-			promise.set(new SerializedObject<>(serDe, mimeType, data, responseType));
-		}
-
-		public void setError(Exception exception) {
-			promise.setError(exception);
-		}
-	}
-	
-	/**
-	 * Sets promise data.
-	 * 
-	 * @author ebahtijaragic
-	 *
-	 * @param <T>
-	 * @param <R>
-	 */
-	private interface HttpDataHandler<T, R> {
-		public void setData(String mimeType, byte[] data, Class<R> responseType);
-		
-		public void setError(Exception exception);
 	}
 }

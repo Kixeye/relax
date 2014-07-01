@@ -117,7 +117,7 @@ public class AsyncRestClientTest {
 		};
 		
 		try (RestClient client = RestClients.create(serDe).build()) {
-			TestObject testObject = client.get("http://localhost:" + port + "/test", TestObject.class).waitForComplete(8, TimeUnit.SECONDS).get().deserialize();
+			TestObject testObject = client.get("http://localhost:" + port + "/test", TestObject.class).waitForComplete(8, TimeUnit.SECONDS).get().getBody().deserialize();
 			
 			Assert.assertEquals("testString", testObject.getTestString());
 			Assert.assertEquals(port, testObject.getTestInt());
@@ -142,7 +142,7 @@ public class AsyncRestClientTest {
 		try (RestClient client = RestClients.create(serDe).build()) {
 			TestObject testObject = client
 					.post("http://localhost:" + port + "/test", null, null, new TestObject("testString", port), TestObject.class)
-					.waitForComplete(8, TimeUnit.SECONDS).get().deserialize();
+					.waitForComplete(8, TimeUnit.SECONDS).get().getBody().deserialize();
 			
 			Assert.assertEquals("testString", testObject.getTestString());
 			Assert.assertEquals(port, testObject.getTestInt());
