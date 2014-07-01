@@ -103,10 +103,14 @@ public class AsyncRestClient implements RestClient {
 	 * @see com.kixeye.relax.RestClient#get(java.lang.String, java.lang.Class, java.lang.Object)
 	 */
 	@Override
-	public <O> HttpPromise<HttpResponse<O>> get(final String path, final Class<O> responseType, Object... pathVariables) throws IOException {
+	public <O> HttpPromise<HttpResponse<O>> get(final String path, String acceptHeader, final Class<O> responseType, Object... pathVariables) throws IOException {
 		HttpPromise<HttpResponse<O>> promise = new HttpPromise<>();
 		
 		HttpGet request = new HttpGet(UrlUtils.expand(uriPrefix + path, pathVariables));
+		
+		if (acceptHeader != null) {
+			request.setHeader("Accept", acceptHeader);
+		}
 
 		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, promise));
 		

@@ -33,12 +33,13 @@ public interface RestClient extends Closeable {
 	 * Performs an HTTP get.
 	 * 
 	 * @param path
+	 * @param acceptHeader
 	 * @param responseType
 	 * @param pathVariables
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract <O> HttpPromise<HttpResponse<O>> get(String path,
+	public abstract <O> HttpPromise<HttpResponse<O>> get(String path, String acceptHeader, 
 			Class<O> responseType, Object... pathVariables) throws IOException;
 
 	/**
