@@ -162,7 +162,9 @@ public class HttpPromise<T> {
 		if (this.value.compareAndSet(null, new Value(null, error))) {
 			isComplete.set(true);
 			
-			this.value.notify();
+			synchronized (this.value) {
+				this.value.notifyAll();
+			}
 			
 			processListeners();
 		}
