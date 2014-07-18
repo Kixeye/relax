@@ -2,7 +2,7 @@ Relax
 =====
 [![Build Status](https://travis-ci.org/Kixeye/relax.svg?branch=master)](https://travis-ci.org/Kixeye/relax)
 
-A REST client that is async.
+A async REST client.
 
 Getting Started
 ==========
