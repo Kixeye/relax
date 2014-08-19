@@ -42,22 +42,21 @@ public final class UrlUtils {
 	 */
 	public static String expand(final String template, Object... objects) throws IOException {
 		StringWriter writer = new StringWriter();
-		
+
+		int currentIndex = 0;
 		int currentCount = 0;
 		int lastIndex = 0;
-		int currentIndex = 0;
 		
-		while ((currentIndex = template.indexOf("{}", lastIndex)) != -1) {
+		while ((currentIndex = template.indexOf("{", lastIndex)) != -1 && currentCount < objects.length) {
 			writer.write(template.substring(lastIndex, currentIndex));
 			
-			if (currentCount < objects.length) {
+			if ((currentIndex = template.indexOf("}", currentIndex)) != -1) {
 				writer.write(URLEncoder.encode("" + objects[currentCount], StandardCharsets.UTF_8.name()));
 				currentCount++;
+				lastIndex = currentIndex + 1;
 			} else {
-				writer.write("{}");
+				break;
 			}
-			
-			lastIndex = currentIndex + 2;
 		}
 		
 		if (lastIndex < template.length()) {

@@ -77,6 +77,13 @@ public class UrlUtilsTest {
 		
 		Assert.assertEquals("/blah/once/mid/twice/otherEnd?param=parameters", UrlUtils.expand(template, "once", "twice", "parameters"));
 	}
+	
+	@Test
+	public void testWithNamedReplacements() throws Exception {
+		final String template = "/blah/{something}/mid/{somethingElse}/otherEnd?param={yetAnotherThing}";
+		
+		Assert.assertEquals("/blah/once/mid/twice/otherEnd?param=parameters", UrlUtils.expand(template, "once", "twice", "parameters"));
+	}
 
 	@Test
 	public void testWithNotEnoughtTokens() throws Exception {
