@@ -21,17 +21,14 @@ package com.kixeye.relax;
  */
 
 import java.io.IOException;
-import java.util.concurrent.CancellationException;
-
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPatch;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.concurrent.FutureCallback;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 
 import com.kixeye.relax.util.UrlUtils;
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
 
 /**
  * A REST Async HTTP Client.
@@ -39,13 +36,13 @@ import com.kixeye.relax.util.UrlUtils;
  * @author ebahtijaragic
  */
 public class AsyncRestClient implements RestClient {
-	private boolean isHttpClientReused = false;
-	
-	private CloseableHttpAsyncClient httpClient;
+	private OkHttpClient httpClient;
 
 	private RestClientSerDe serDe;
 	
 	private String uriPrefix = "";
+
+	private String userAgentName;
 	
 	/**
 	 * Creates an {@link AsyncRestClient}
@@ -82,9 +79,8 @@ public class AsyncRestClient implements RestClient {
 	 * @param httpClient
 	 * @param isHttpClientReused
 	 */
-	protected void setHttpClient(CloseableHttpAsyncClient httpClient, boolean isHttpClientReused) {
+	protected void setHttpClient(OkHttpClient httpClient) {
 		this.httpClient = httpClient;
-		this.isHttpClientReused = isHttpClientReused;
 	}
 	
 	/**
@@ -94,9 +90,7 @@ public class AsyncRestClient implements RestClient {
 	 * @throws IOException 
 	 */
 	public void close() throws IOException {
-		if (!isHttpClientReused) {
-			httpClient.close();
-		}
+		// nothing to do
 	}
 	
 	/**
@@ -106,13 +100,17 @@ public class AsyncRestClient implements RestClient {
 	public <O> HttpPromise<HttpResponse<O>> get(final String path, String acceptHeader, final Class<O> responseType, Object... pathVariables) throws IOException {
 		HttpPromise<HttpResponse<O>> promise = new HttpPromise<>();
 		
-		HttpGet request = new HttpGet(UrlUtils.expand(uriPrefix + path, pathVariables));
+		Request.Builder requestBuilder = new Request.Builder().get().url(UrlUtils.expand(uriPrefix + path, pathVariables));
+		
+		if (userAgentName != null) {
+			requestBuilder = requestBuilder.addHeader("User-Agent", userAgentName);
+		}
 		
 		if (acceptHeader != null) {
-			request.setHeader("Accept", acceptHeader);
+			requestBuilder = requestBuilder.addHeader("Accept", acceptHeader);
 		}
-
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, promise));
+		
+		httpClient.newCall(requestBuilder.build()).enqueue(new AsyncRestClientResponseCallback<>(responseType, promise));
 		
 		return promise;
 	}
@@ -124,20 +122,23 @@ public class AsyncRestClient implements RestClient {
 	public <I, O> HttpPromise<HttpResponse<O>> post(String path, String contentTypeHeader, String acceptHeader, I requestObject, final Class<O> responseType, Object... pathVariables) throws IOException {
 		HttpPromise<HttpResponse<O>> promise = new HttpPromise<>();
 		
-		HttpPost request = new HttpPost(UrlUtils.expand(uriPrefix + path, pathVariables));
-		if (requestObject != null) {
-			request.setEntity(new ByteArrayEntity(serDe.serialize(contentTypeHeader, requestObject)));
+		RequestBody body = RequestBody.create(contentTypeHeader == null ? null : MediaType.parse(contentTypeHeader), serDe.serialize(contentTypeHeader, requestObject));
+		
+		Request.Builder requestBuilder = new Request.Builder().post(body).url(UrlUtils.expand(uriPrefix + path, pathVariables));
+		
+		if (userAgentName != null) {
+			requestBuilder = requestBuilder.addHeader("User-Agent", userAgentName);
 		}
 		
 		if (contentTypeHeader != null) {
-			request.setHeader("Content-Type", contentTypeHeader);
+			requestBuilder = requestBuilder.addHeader("Content-Type", contentTypeHeader);
 		}
 		
 		if (acceptHeader != null) {
-			request.setHeader("Accept", acceptHeader);
+			requestBuilder = requestBuilder.addHeader("Accept", acceptHeader);
 		}
-
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, promise));
+		
+		httpClient.newCall(requestBuilder.build()).enqueue(new AsyncRestClientResponseCallback<>(responseType, promise));
 		
 		return promise;
 	}
@@ -146,23 +147,26 @@ public class AsyncRestClient implements RestClient {
 	 * @see com.kixeye.relax.RestClient#put(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Object)
 	 */
 	@Override
-	public <I> HttpPromise<HttpResponse<Void>> put(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
-		HttpPromise<HttpResponse<Void>> promise = new HttpPromise<>();
+	public <I, O> HttpPromise<HttpResponse<O>> put(String path, String contentTypeHeader, String acceptHeader, I requestObject, Class<O> responseType, Object... pathVariables) throws IOException {
+		HttpPromise<HttpResponse<O>> promise = new HttpPromise<>();
 		
-		HttpPost request = new HttpPost(UrlUtils.expand(uriPrefix + path, pathVariables));
-		if (requestObject != null) {
-			request.setEntity(new ByteArrayEntity(serDe.serialize(contentTypeHeader, requestObject)));
+		RequestBody body = RequestBody.create(contentTypeHeader == null ? null : MediaType.parse(contentTypeHeader), serDe.serialize(contentTypeHeader, requestObject));
+		
+		Request.Builder requestBuilder = new Request.Builder().put(body).url(UrlUtils.expand(uriPrefix + path, pathVariables));
+		
+		if (userAgentName != null) {
+			requestBuilder = requestBuilder.addHeader("User-Agent", userAgentName);
 		}
 		
 		if (contentTypeHeader != null) {
-			request.setHeader("Content-Type", contentTypeHeader);
+			requestBuilder = requestBuilder.addHeader("Content-Type", contentTypeHeader);
 		}
 		
 		if (acceptHeader != null) {
-			request.setHeader("Accept", acceptHeader);
+			requestBuilder = requestBuilder.addHeader("Accept", acceptHeader);
 		}
-
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, promise));
+		
+		httpClient.newCall(requestBuilder.build()).enqueue(new AsyncRestClientResponseCallback<>(responseType, promise));
 		
 		return promise;
 	}
@@ -171,23 +175,26 @@ public class AsyncRestClient implements RestClient {
 	 * @see com.kixeye.relax.RestClient#patch(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Object)
 	 */
 	@Override
-	public <I> HttpPromise<HttpResponse<Void>> patch(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
-		HttpPromise<HttpResponse<Void>> promise = new HttpPromise<>();
+	public <I, O> HttpPromise<HttpResponse<O>> patch(String path, String contentTypeHeader, String acceptHeader, I requestObject, Class<O> responseType, Object... pathVariables) throws IOException {
+		HttpPromise<HttpResponse<O>> promise = new HttpPromise<>();
 		
-		HttpPatch request = new HttpPatch(UrlUtils.expand(uriPrefix + path, pathVariables));
-		if (requestObject != null) {
-			request.setEntity(new ByteArrayEntity(serDe.serialize(contentTypeHeader, requestObject)));
+		RequestBody body = RequestBody.create(contentTypeHeader == null ? null : MediaType.parse(contentTypeHeader), serDe.serialize(contentTypeHeader, requestObject));
+		
+		Request.Builder requestBuilder = new Request.Builder().patch(body).url(UrlUtils.expand(uriPrefix + path, pathVariables));
+		
+		if (userAgentName != null) {
+			requestBuilder = requestBuilder.addHeader("User-Agent", userAgentName);
 		}
 		
 		if (contentTypeHeader != null) {
-			request.setHeader("Content-Type", contentTypeHeader);
+			requestBuilder = requestBuilder.addHeader("Content-Type", contentTypeHeader);
 		}
 		
 		if (acceptHeader != null) {
-			request.setHeader("Accept", acceptHeader);
+			requestBuilder = requestBuilder.addHeader("Accept", acceptHeader);
 		}
-
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, promise));
+		
+		httpClient.newCall(requestBuilder.build()).enqueue(new AsyncRestClientResponseCallback<>(responseType, promise));
 		
 		return promise;
 	}
@@ -199,20 +206,24 @@ public class AsyncRestClient implements RestClient {
 	public <I> HttpPromise<HttpResponse<Void>> delete(String path, Object... pathVariables) throws IOException {
 		HttpPromise<HttpResponse<Void>> promise = new HttpPromise<>();
 		
-		HttpDelete request = new HttpDelete(UrlUtils.expand(uriPrefix + path, pathVariables));
+		Request.Builder requestBuilder = new Request.Builder().delete().url(UrlUtils.expand(uriPrefix + path, pathVariables));
 		
-		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, promise));
+		if (userAgentName != null) {
+			requestBuilder = requestBuilder.addHeader("User-Agent", userAgentName);
+		}
+		
+		httpClient.newCall(requestBuilder.build()).enqueue(new AsyncRestClientResponseCallback<>(null, promise));
 		
 		return promise;
 	}
 	
 	/**
-	 * Returns true if we're active.
+	 * Sets the user agent name.
 	 * 
-	 * @return
+	 * @param userAgentName
 	 */
-	public boolean isActive() {
-		return httpClient.isRunning();
+	public void setUserAgentName(String userAgentName) {
+		this.userAgentName = userAgentName;
 	}
 	
 	/**
@@ -220,7 +231,7 @@ public class AsyncRestClient implements RestClient {
 	 * 
 	 * @author ebahtijaragic
 	 */
-	private class AsyncRestClientResponseCallback<R> implements FutureCallback<org.apache.http.HttpResponse> {
+	private class AsyncRestClientResponseCallback<R> implements Callback {
 		private final Class<R> responseType;
 		
 		private HttpPromise<HttpResponse<R>> promise;
@@ -234,20 +245,16 @@ public class AsyncRestClient implements RestClient {
 			this.promise = promise;
 		}
 
-		public void failed(Exception ex) {
-			promise.setError(ex);
+		public void onFailure(Request request, IOException e) {
+			promise.setError(e);
 		}
-		
-		public void completed(org.apache.http.HttpResponse result) {
+
+		public void onResponse(Response response) throws IOException {
 			try {
-				promise.set(new HttpResponse<>(result, serDe, responseType));
+				promise.set(new HttpResponse<>(response, serDe, responseType));
 			} catch (Exception e) {
-				failed(e);
+				promise.setError(e);
 			}
-		}
-		
-		public void cancelled() {
-			promise.setError(new CancellationException());
 		}
 	}
 }

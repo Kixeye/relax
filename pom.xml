@@ -14,14 +14,14 @@
 		<artifactId>oss-parent</artifactId>
 		<version>7</version>
 	</parent>
-	
+
 	<licenses>
 		<license>
 			<name>The Apache Software License, Version 2.0</name>
 			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
 		</license>
 	</licenses>
-	
+
 	<developers>
 		<developer>
 			<name>Elvir Bahtijaragic</name>
@@ -44,12 +44,12 @@
 	</developers>
 
 	<properties>
-    	<slf4j.version>1.7.7</slf4j.version>
-    	<asynchttpclient.version>4.0.1</asynchttpclient.version>
-    	<httpclient.version>4.3.2</httpclient.version>
-    	
-        <!-- Plugins -->
-        <license-maven-plugin.version>1.7</license-maven-plugin.version>
+		<slf4j.version>1.7.7</slf4j.version>
+		<asynchttpclient.version>4.0.1</asynchttpclient.version>
+		<httpclient.version>4.3.2</httpclient.version>
+
+		<!-- Plugins -->
+		<license-maven-plugin.version>1.7</license-maven-plugin.version>
 	</properties>
 
 	<build>
@@ -106,7 +106,8 @@
 		</plugins>
 		<pluginManagement>
 			<plugins>
-				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+				<!--This plugin's configuration is used to store Eclipse m2e settings 
+					only. It has no influence on the Maven build itself. -->
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
@@ -146,36 +147,9 @@
 	<dependencies>
 		<!-- HTTP -->
 		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpasyncclient</artifactId>
-			<version>${asynchttpclient.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient</artifactId>
-			<version>${httpclient.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpcore-nio</artifactId>
-			<version>${httpclient.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpcore</artifactId>
-			<version>${httpclient.version}</version>
+			<groupId>com.squareup.okhttp</groupId>
+			<artifactId>okhttp</artifactId>
+			<version>2.0.0</version>
 		</dependency>
 
 		<!-- Logging -->

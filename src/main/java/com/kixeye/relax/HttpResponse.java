@@ -27,9 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.util.EntityUtils;
+import com.squareup.okhttp.Headers;
+import com.squareup.okhttp.Response;
 
 /**
  * HTTP response.
@@ -65,33 +64,22 @@ public class HttpResponse<T> {
 	 * @param objectType
 	 * @throws IOException
 	 */
-	protected HttpResponse(org.apache.http.HttpResponse result, RestClientSerDe serDe, Class<T> objectType) throws IOException {
-		this.statusCode = result.getStatusLine().getStatusCode();
+	protected HttpResponse(Response response, RestClientSerDe serDe, Class<T> objectType) throws IOException {
+		this.statusCode = response.code();
 		
-		Header[] headers = result.getAllHeaders();
+		Headers headers = response.headers();
 		if (headers != null) {
-			for (Header header : headers) {
-				List<String> headerValues = this.headers.get(header.getName());
-				if (headerValues == null) {
-					headerValues = new ArrayList<>();
-					this.headers.put(header.getName(), headerValues);
-				}
-				headerValues.add(header.getValue());
+			for (String headerName : headers.names()) {
+				this.headers.put(headerName, headers.values(headerName));
 			}
 		}
 		
-		HttpEntity entity = result.getEntity();
-		byte[] data = null;
+		byte[] data = response.body().bytes();
 		
-		if (entity != null) {
-			data = EntityUtils.toByteArray(entity);
-			EntityUtils.consumeQuietly(entity);
-		}
-		
-		Header contentTypeHeader = result.getFirstHeader("Content-Type");
+		String contentType = response.header("Content-Type");
 		
 		if (!Void.class.equals(objectType)) {
-			this.body = new SerializedObject<>(serDe, contentTypeHeader != null ? contentTypeHeader.getValue() : null, data, objectType);
+			this.body = new SerializedObject<>(serDe, contentType, data, objectType);
 		} else {
 			this.body = null;
 		}

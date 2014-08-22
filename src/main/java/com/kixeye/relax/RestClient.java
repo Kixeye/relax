@@ -65,13 +65,14 @@ public interface RestClient extends Closeable {
 	 * @param contentTypeHeader
 	 * @param acceptHeader
 	 * @param requestObject
+	 * @param responseType
 	 * @param pathVariables
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract <I> HttpPromise<HttpResponse<Void>> put(String path,
+	public abstract <I, O> HttpPromise<HttpResponse<O>> put(String path,
 			String contentTypeHeader, String acceptHeader, I requestObject,
-			Object... pathVariables) throws IOException;
+			Class<O> responseType, Object... pathVariables) throws IOException;
 
 	/**
 	 * Performs a HTTP patch.
@@ -80,13 +81,14 @@ public interface RestClient extends Closeable {
 	 * @param contentTypeHeader
 	 * @param acceptHeader
 	 * @param requestObject
+	 * @param responseType
 	 * @param pathVariables
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract <I> HttpPromise<HttpResponse<Void>> patch(String path,
+	public abstract <I, O> HttpPromise<HttpResponse<O>> patch(String path,
 			String contentTypeHeader, String acceptHeader, I requestObject,
-			Object... pathVariables) throws IOException;
+			Class<O> responseType, Object... pathVariables) throws IOException;
 
 	/**
 	 * Performs a HTTP delete.

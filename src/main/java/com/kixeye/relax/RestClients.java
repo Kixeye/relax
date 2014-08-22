@@ -20,12 +20,11 @@ package com.kixeye.relax;
  * #L%
  */
 
+import java.util.concurrent.TimeUnit;
+
 import javax.net.ssl.SSLContext;
 
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.impl.nio.client.HttpAsyncClients;
+import com.squareup.okhttp.OkHttpClient;
 
 /**
  * Builds rest clients.
@@ -63,7 +62,12 @@ public final class RestClients {
 		private final String uriPrefix;
 		private final RestClientSerDe serDe;
 		
-		private RequestConfig requestConfig;
+		private int connectionTimeoutValue = 5;
+		private TimeUnit connectionTimeoutTimeUnit = TimeUnit.SECONDS;
+
+		private int readTimeoutValue = 5;
+		private TimeUnit readTimeoutTimeUnit = TimeUnit.SECONDS;
+		
 		private SSLContext sslContext;
 		private String userAgentName;
 
@@ -84,18 +88,6 @@ public final class RestClients {
 		}
 		
 		/**
-		 * With a request config.
-		 * 
-		 * @param requestConfig
-		 * @return
-		 */
-		public RestClientBuilder withRequestConfig(RequestConfig requestConfig) {
-			this.requestConfig = requestConfig;
-			
-			return this;
-		}
-		
-		/**
 		 * With a ssl context.
 		 * 
 		 * @param sslContext
@@ -108,13 +100,29 @@ public final class RestClients {
 		}
 		
 		/**
-		 * With a user agent name.
+		 * Sets the read timeout.
 		 * 
-		 * @param userAgentName
+		 * @param timeout
+		 * @param timeUnit
 		 * @return
 		 */
-		public RestClientBuilder withUserAgentName(String userAgentName) {
-			this.userAgentName = userAgentName;
+		public RestClientBuilder withReadTimeout(int timeout, TimeUnit timeUnit) {
+			this.readTimeoutValue = timeout;
+			this.readTimeoutTimeUnit = timeUnit;
+			
+			return this;
+		}
+		
+		/**
+		 * Sets the connection timeout.
+		 * 
+		 * @param timeout
+		 * @param timeUnit
+		 * @return
+		 */
+		public RestClientBuilder withConnectionTimeout(int timeout, TimeUnit timeUnit) {
+			this.connectionTimeoutValue = timeout;
+			this.connectionTimeoutTimeUnit = timeUnit;
 			
 			return this;
 		}
@@ -128,22 +136,17 @@ public final class RestClients {
 			AsyncRestClient client = new AsyncRestClient();
 			client.setUriPrefix(uriPrefix);
 			
-			HttpAsyncClientBuilder builder = HttpAsyncClients.custom();
-			if (requestConfig != null) {
-				builder.setDefaultRequestConfig(requestConfig);
-			}
-			if (userAgentName != null) {
-				builder.setUserAgent(userAgentName);
-			}
+			OkHttpClient httpClient = new OkHttpClient();
+			httpClient.setReadTimeout(readTimeoutValue, readTimeoutTimeUnit);
+			httpClient.setConnectTimeout(connectionTimeoutValue, connectionTimeoutTimeUnit);
+			
 			if (sslContext != null) {
-				builder.setSSLContext(sslContext);
+				httpClient.setSslSocketFactory(sslContext.getSocketFactory());
 			}
 			
-			CloseableHttpAsyncClient httpClient = builder.build();
-			httpClient.start();
-			
-			client.setHttpClient(httpClient, false);
+			client.setHttpClient(httpClient);
 			client.setSerDe(serDe);
+			client.setUserAgentName(userAgentName);
 			
 			return client;
 		}

@@ -165,7 +165,7 @@ public class AsyncRestClientTest {
 		};
 
 		try (RestClient client = RestClients.create(serDe).build()) {
-			boolean isComplete = client.put("http://localhost:" + port + "/test", null, null, new TestObject("testString", port))
+			boolean isComplete = client.put("http://localhost:" + port + "/test", null, null, new TestObject("testString", port), null)
 					.waitForComplete(8, TimeUnit.SECONDS).isComplete();
 			
 			Assert.assertTrue(isComplete);
