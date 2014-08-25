@@ -22,6 +22,7 @@ package com.kixeye.relax;
 
 import javax.net.ssl.SSLContext;
 
+import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
@@ -63,6 +64,7 @@ public final class RestClients {
 		private final String uriPrefix;
 		private final RestClientSerDe serDe;
 		
+		private ConnectionReuseStrategy connectionReuseStrategy;
 		private RequestConfig requestConfig;
 		private SSLContext sslContext;
 		private String userAgentName;
@@ -81,6 +83,18 @@ public final class RestClients {
 		protected RestClientBuilder(RestClientSerDe serDe) {
 			this.uriPrefix = null;
 			this.serDe = serDe;
+		}
+		
+		/**
+		 * With a request config.
+		 * 
+		 * @param requestConfig
+		 * @return
+		 */
+		public RestClientBuilder withConnectionReuseStrategy(ConnectionReuseStrategy connectionReuseStrategy) {
+			this.connectionReuseStrategy = connectionReuseStrategy;
+			
+			return this;
 		}
 		
 		/**
@@ -137,6 +151,9 @@ public final class RestClients {
 			}
 			if (sslContext != null) {
 				builder.setSSLContext(sslContext);
+			}
+			if (connectionReuseStrategy != null) {
+				builder.setConnectionReuseStrategy(connectionReuseStrategy);
 			}
 			
 			CloseableHttpAsyncClient httpClient = builder.build();
