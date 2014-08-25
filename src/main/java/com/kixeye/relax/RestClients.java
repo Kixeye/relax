@@ -20,9 +20,12 @@ package com.kixeye.relax;
  * #L%
  */
 
+import java.util.Arrays;
+
 import javax.net.ssl.SSLContext;
 
 import org.apache.http.ConnectionReuseStrategy;
+import org.apache.http.Header;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
@@ -64,6 +67,7 @@ public final class RestClients {
 		private final String uriPrefix;
 		private final RestClientSerDe serDe;
 		
+		private Header[] defaultHeaders;
 		private ConnectionReuseStrategy connectionReuseStrategy;
 		private RequestConfig requestConfig;
 		private SSLContext sslContext;
@@ -86,7 +90,7 @@ public final class RestClients {
 		}
 		
 		/**
-		 * With a request config.
+		 * With a connection resuse strategy.
 		 * 
 		 * @param requestConfig
 		 * @return
@@ -105,6 +109,18 @@ public final class RestClients {
 		 */
 		public RestClientBuilder withRequestConfig(RequestConfig requestConfig) {
 			this.requestConfig = requestConfig;
+			
+			return this;
+		}
+		
+		/**
+		 * With a default headers.
+		 * 
+		 * @param requestConfig
+		 * @return
+		 */
+		public RestClientBuilder withDefaultHeaders(Header... defaultHeaders) {
+			this.defaultHeaders = defaultHeaders;
 			
 			return this;
 		}
@@ -154,6 +170,9 @@ public final class RestClients {
 			}
 			if (connectionReuseStrategy != null) {
 				builder.setConnectionReuseStrategy(connectionReuseStrategy);
+			}
+			if (defaultHeaders != null) {
+				builder.setDefaultHeaders(Arrays.asList(defaultHeaders));
 			}
 			
 			CloseableHttpAsyncClient httpClient = builder.build();
