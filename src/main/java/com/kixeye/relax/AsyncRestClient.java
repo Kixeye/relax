@@ -21,6 +21,9 @@ package com.kixeye.relax;
  */
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CancellationException;
 
 import org.apache.http.client.methods.HttpDelete;
@@ -98,18 +101,34 @@ public class AsyncRestClient implements RestClient {
 			httpClient.close();
 		}
 	}
+
+	/**
+	 * @see com.kixeye.relax.RestClient#get(java.lang.String, java.lang.String, java.lang.Class, java.lang.Object[])
+	 */
+	@Override
+	public <O> HttpPromise<HttpResponse<O>> get(final String path, String acceptHeader, final Class<O> responseType, Object... pathVariables) throws IOException {
+		return get(path, acceptHeader, responseType, null, pathVariables);
+	}
 	
 	/**
 	 * @see com.kixeye.relax.RestClient#get(java.lang.String, java.lang.Class, java.lang.Object)
 	 */
 	@Override
-	public <O> HttpPromise<HttpResponse<O>> get(final String path, String acceptHeader, final Class<O> responseType, Object... pathVariables) throws IOException {
+	public <O> HttpPromise<HttpResponse<O>> get(final String path, String acceptHeader, final Class<O> responseType, Map<String, List<String>> additonalHeaders, Object... pathVariables) throws IOException {
 		HttpPromise<HttpResponse<O>> promise = new HttpPromise<>();
 		
 		HttpGet request = new HttpGet(UrlUtils.expand(uriPrefix + path, pathVariables));
 		
 		if (acceptHeader != null) {
 			request.setHeader("Accept", acceptHeader);
+		}
+		
+		if (additonalHeaders != null && !additonalHeaders.isEmpty()) {
+			for (Entry<String, List<String>> header : additonalHeaders.entrySet()) {
+				for (String value : header.getValue()) {
+					request.addHeader(header.getKey(), value);
+				}
+			}
 		}
 
 		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, promise));
@@ -118,10 +137,18 @@ public class AsyncRestClient implements RestClient {
 	}
 	
 	/**
-	 * @see com.kixeye.relax.RestClient#post(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Class, java.lang.Object)
+	 * @see com.kixeye.relax.RestClient#post(java.lang.String, java.lang.String, java.lang.String, java.lang.Object, java.lang.Class, java.lang.Object[])
 	 */
 	@Override
 	public <I, O> HttpPromise<HttpResponse<O>> post(String path, String contentTypeHeader, String acceptHeader, I requestObject, final Class<O> responseType, Object... pathVariables) throws IOException {
+		return post(path, contentTypeHeader, acceptHeader, requestObject, responseType, null, pathVariables);
+	}
+	
+	/**
+	 * @see com.kixeye.relax.RestClient#post(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Class, java.lang.Object)
+	 */
+	@Override
+	public <I, O> HttpPromise<HttpResponse<O>> post(String path, String contentTypeHeader, String acceptHeader, I requestObject, final Class<O> responseType, Map<String, List<String>> additonalHeaders, Object... pathVariables) throws IOException {
 		HttpPromise<HttpResponse<O>> promise = new HttpPromise<>();
 		
 		HttpPost request = new HttpPost(UrlUtils.expand(uriPrefix + path, pathVariables));
@@ -137,16 +164,32 @@ public class AsyncRestClient implements RestClient {
 			request.setHeader("Accept", acceptHeader);
 		}
 
+		if (additonalHeaders != null && !additonalHeaders.isEmpty()) {
+			for (Entry<String, List<String>> header : additonalHeaders.entrySet()) {
+				for (String value : header.getValue()) {
+					request.addHeader(header.getKey(), value);
+				}
+			}
+		}
+		
 		httpClient.execute(request, new AsyncRestClientResponseCallback<>(responseType, promise));
 		
 		return promise;
 	}
 	
 	/**
-	 * @see com.kixeye.relax.RestClient#put(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Object)
+	 * @see com.kixeye.relax.RestClient#put(java.lang.String, java.lang.String, java.lang.String, java.lang.Object, java.lang.Object[])
 	 */
 	@Override
 	public <I> HttpPromise<HttpResponse<Void>> put(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
+		return put(path, contentTypeHeader, acceptHeader, requestObject, null, pathVariables);
+	}
+	
+	/**
+	 * @see com.kixeye.relax.RestClient#put(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Object)
+	 */
+	@Override
+	public <I> HttpPromise<HttpResponse<Void>> put(String path, String contentTypeHeader, String acceptHeader, I requestObject, Map<String, List<String>> additonalHeaders, Object... pathVariables) throws IOException {
 		HttpPromise<HttpResponse<Void>> promise = new HttpPromise<>();
 		
 		HttpPost request = new HttpPost(UrlUtils.expand(uriPrefix + path, pathVariables));
@@ -161,6 +204,14 @@ public class AsyncRestClient implements RestClient {
 		if (acceptHeader != null) {
 			request.setHeader("Accept", acceptHeader);
 		}
+		
+		if (additonalHeaders != null && !additonalHeaders.isEmpty()) {
+			for (Entry<String, List<String>> header : additonalHeaders.entrySet()) {
+				for (String value : header.getValue()) {
+					request.addHeader(header.getKey(), value);
+				}
+			}
+		}
 
 		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, promise));
 		
@@ -168,10 +219,18 @@ public class AsyncRestClient implements RestClient {
 	}
 
 	/**
-	 * @see com.kixeye.relax.RestClient#patch(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Object)
+	 * @see com.kixeye.relax.RestClient#patch(java.lang.String, java.lang.String, java.lang.String, java.lang.Object, java.lang.Object[])
 	 */
 	@Override
 	public <I> HttpPromise<HttpResponse<Void>> patch(String path, String contentTypeHeader, String acceptHeader, I requestObject, Object... pathVariables) throws IOException {
+		return patch(path, contentTypeHeader, acceptHeader, requestObject, null, pathVariables);
+	}
+
+	/**
+	 * @see com.kixeye.relax.RestClient#patch(java.lang.String, java.lang.String, java.lang.String, I, java.lang.Object)
+	 */
+	@Override
+	public <I> HttpPromise<HttpResponse<Void>> patch(String path, String contentTypeHeader, String acceptHeader, I requestObject, Map<String, List<String>> additonalHeaders, Object... pathVariables) throws IOException {
 		HttpPromise<HttpResponse<Void>> promise = new HttpPromise<>();
 		
 		HttpPatch request = new HttpPatch(UrlUtils.expand(uriPrefix + path, pathVariables));
@@ -186,6 +245,14 @@ public class AsyncRestClient implements RestClient {
 		if (acceptHeader != null) {
 			request.setHeader("Accept", acceptHeader);
 		}
+		
+		if (additonalHeaders != null && !additonalHeaders.isEmpty()) {
+			for (Entry<String, List<String>> header : additonalHeaders.entrySet()) {
+				for (String value : header.getValue()) {
+					request.addHeader(header.getKey(), value);
+				}
+			}
+		}
 
 		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, promise));
 		
@@ -193,13 +260,29 @@ public class AsyncRestClient implements RestClient {
 	}
 
 	/**
-	 * @see com.kixeye.relax.RestClient#delete(java.lang.String, java.lang.Object)
+	 * @see com.kixeye.relax.RestClient#delete(java.lang.String, java.lang.Object[])
 	 */
 	@Override
 	public <I> HttpPromise<HttpResponse<Void>> delete(String path, Object... pathVariables) throws IOException {
+		return delete(path, null, pathVariables);
+	}
+
+	/**
+	 * @see com.kixeye.relax.RestClient#delete(java.lang.String, java.util.Map, java.lang.Object[])
+	 */
+	@Override
+	public <I> HttpPromise<HttpResponse<Void>> delete(String path, Map<String, List<String>> additonalHeaders, Object... pathVariables) throws IOException {
 		HttpPromise<HttpResponse<Void>> promise = new HttpPromise<>();
 		
 		HttpDelete request = new HttpDelete(UrlUtils.expand(uriPrefix + path, pathVariables));
+		
+		if (additonalHeaders != null && !additonalHeaders.isEmpty()) {
+			for (Entry<String, List<String>> header : additonalHeaders.entrySet()) {
+				for (String value : header.getValue()) {
+					request.addHeader(header.getKey(), value);
+				}
+			}
+		}
 		
 		httpClient.execute(request, new AsyncRestClientResponseCallback<>(null, promise));
 		

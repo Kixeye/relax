@@ -22,6 +22,8 @@ package com.kixeye.relax;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A REST Client.
@@ -97,6 +99,76 @@ public interface RestClient extends Closeable {
 	 * @throws IOException
 	 */
 	public abstract <I> HttpPromise<HttpResponse<Void>> delete(String path,
+			Object... pathVariables) throws IOException;
+	
+	/**
+	 * Performs an HTTP get.
+	 * 
+	 * @param path
+	 * @param acceptHeader
+	 * @param responseType
+	 * @param pathVariables
+	 * @return
+	 * @throws IOException
+	 */
+	public abstract <O> HttpPromise<HttpResponse<O>> get(String path, String acceptHeader, 
+			Class<O> responseType, Map<String, List<String>> additonalHeaders, Object... pathVariables) throws IOException;
+
+	/**
+	 * Performs a HTTP post.
+	 * 
+	 * @param path
+	 * @param contentTypeHeader
+	 * @param acceptHeader
+	 * @param requestObject
+	 * @param responseType
+	 * @param pathVariables
+	 * @return
+	 * @throws IOException
+	 */
+	public abstract <I, O> HttpPromise<HttpResponse<O>> post(String path,
+			String contentTypeHeader, String acceptHeader, I requestObject,
+			Class<O> responseType, Map<String, List<String>> additonalHeaders, Object... pathVariables) throws IOException;
+
+	/**
+	 * Performs a HTTP put.
+	 * 
+	 * @param path
+	 * @param contentTypeHeader
+	 * @param acceptHeader
+	 * @param requestObject
+	 * @param pathVariables
+	 * @return
+	 * @throws IOException
+	 */
+	public abstract <I> HttpPromise<HttpResponse<Void>> put(String path,
+			String contentTypeHeader, String acceptHeader, I requestObject, Map<String, List<String>> additonalHeaders,
+			Object... pathVariables) throws IOException;
+
+	/**
+	 * Performs a HTTP patch.
+	 * 
+	 * @param path
+	 * @param contentTypeHeader
+	 * @param acceptHeader
+	 * @param requestObject
+	 * @param pathVariables
+	 * @return
+	 * @throws IOException
+	 */
+	public abstract <I> HttpPromise<HttpResponse<Void>> patch(String path,
+			String contentTypeHeader, String acceptHeader, I requestObject, Map<String, List<String>> additonalHeaders,
+			Object... pathVariables) throws IOException;
+
+	/**
+	 * Performs a HTTP delete.
+	 * 
+	 * @param path
+	 * @param pathVariables
+	 * @return
+	 * @throws IOException
+	 */
+	public abstract <I> HttpPromise<HttpResponse<Void>> delete(String path, Map<String, List<String>> additonalHeaders,
 			Object... pathVariables) throws IOException;
 
 }
